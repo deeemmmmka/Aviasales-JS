@@ -6,29 +6,66 @@ const formSearch = document.querySelector('.form-search'),
     dropDownCitiesTo = document.querySelector('.dropdown__cities-to'),
     inputDateDepart = document.querySelector('.input__date-depart');
 
-// создаем массив городов
-const city = ['Москва', 'Санкт-Петербург', 'Минск', 'Караганда', 'Челябинск', 'Керчь', 'Симферополь', 'Волгоград', 'Самара', 'Днепропетровск', 'Екатеринбург', 'Одесса', 'Ухань', 'Нижний Новгород', 'Калининград', 'Вроцлав', 'Ростов-на-Дону', 'Киев', 'Владивосток', 'Нью-Йорк', 'Лондон', 'Тегеран', 'Канны', 'Оттава'];
+// данные
 
-//помещаем в переменную функцию для выбора города
+const citiesApi ='http://api.travelpayouts.com/data/ru/cities.json',
+    proxy ='https://cors-anywhere.herokuapp.com/',
+    API_KEY = '866693554fd1ab7d73b276d46105eba8',
+    calendar = 'http://min-prices.aviasales.ru/calendar_preload',
+    queryBilets = '?origin=SVX&destination=KGD&depart_date=2020-05-25&one_way=true';
+
+
+let city = [];
+
+// функции
+
+const getData = (url, callback) => {
+    const request = new XMLHttpRequest();
+
+    request.open('GET', url);
+
+    request.addEventListener('readystatechange', () => {
+        if ( request.readyState !== 4 ) return;
+
+        if ( request.status === 200 ) {
+            callback(request.response);
+        } else {
+            console.error(request.status);
+        }
+    });
+
+    request.send();
+};
+
+
 const showCity = (input, list) => {
     list.textContent = ''; // очищаем выпадающее меню
 
     if(input.value !== ''){
-
         const  filterCity = city.filter((item) => {
-            const fixItem = item.toLowerCase();
+            const fixItem = item.name.toLowerCase();
             return fixItem.includes(input.value.toLowerCase());
         });
 
         filterCity.forEach((item) => {
             const li = document.createElement('li');
             li.classList.add('dropdown__city');
-            li.textContent = item;
+            li.textContent = item.name;
             list.append(li);
         });
     }
 };
 
+// помещаем в переменную функцию выбора города в выпадающем списке
+const targetPush = (event, input, list) => {
+    const target = event.target;
+    if(target.tagName.toLowerCase() === 'li'){
+        input.value = target.textContent;
+        list.textContent = '';
+    }
+}
+
+// обработчики событий
 // при наборе чего либо в инпуте города вылета вызываем функцию, помогающую выбрать город вылета
 inputCitiesFrom.addEventListener('input', () => {
     showCity(inputCitiesFrom, dropDownCitiesFrom)
@@ -38,21 +75,23 @@ inputCitiesTo.addEventListener('input', () => {
     showCity(inputCitiesTo, dropDownCitiesTo)
 });
 
-// помещаем в переменную функцию выбора города в выпадающем списке
-const targetPush = (input, list) => {
-    const target = event.target;
-    if(target.tagName.toLowerCase() === 'li'){
-        input.value = target.textContent;
-        list.textContent = '';
-    }
-}
-
 // вешаем событие выбора нужного города вылета при клике на элемент выпадающего списка
 dropDownCitiesFrom.addEventListener('click', (event) => {
-    targetPush(inputCitiesFrom, dropDownCitiesFrom)
+    targetPush(event, inputCitiesFrom, dropDownCitiesFrom)
 });
 
 // вешаем событие выбора нужного города прилета при клике на элемент выпадающего списка
 dropDownCitiesTo.addEventListener('click', (event) => {
-    targetPush(inputCitiesTo, dropDownCitiesTo)
+    targetPush(event, inputCitiesTo, dropDownCitiesTo)
+});
+
+
+// вызовы функций
+getData(proxy + citiesApi, (data) => {
+    city = JSON.parse(data).filter(item => item.name);
+});
+
+// вызов функции которая ищет билеты на 25 мая Екатеринбург - Калининград
+getData(calendar + queryBilets, (data) => {
+    console.log(data);
 });
