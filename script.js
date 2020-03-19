@@ -12,7 +12,7 @@ const citiesApi ='http://api.travelpayouts.com/data/ru/cities.json',
     proxy ='https://cors-anywhere.herokuapp.com/',
     API_KEY = '866693554fd1ab7d73b276d46105eba8',
     calendar = 'http://min-prices.aviasales.ru/calendar_preload',
-    queryBilets = '?origin=SVX&destination=KGD&depart_date=2020-05-25&one_way=false';
+    queryBilets = '?&depart_date=2020-05-25&origin=SVX&destination=KGD&one_way=true&token';
 
 
 let city = [];
@@ -47,6 +47,7 @@ const showCity = (input, list) => {
             return fixItem.includes(input.value.toLowerCase());
         });
 
+
         filterCity.forEach((item) => {
             const li = document.createElement('li');
             li.classList.add('dropdown__city');
@@ -63,7 +64,30 @@ const targetPush = (event, input, list) => {
         input.value = target.textContent;
         list.textContent = '';
     }
-}
+};
+
+const renderCheapDay = (cheapTicket) => {
+    console.log(cheapTicket);
+};
+const renderCheapYear = (cheapTickets) => {
+    console.log(cheapTickets);
+};
+
+const renderCheap = (data, date) => {
+    const cheapTicketYear = JSON.parse(data).best_prices;
+    const cheapTicketDay = cheapTicketYear.filter((item) => {
+         return item.depart_date === date;
+    })
+    // сортировка по датам
+    const cheapTicketYearSort = cheapTicketYear.sort((a,b) => {
+        var dateA = new Date(a.depart_date);
+        var dateB = new Date(b.depart_date);
+        return dateA - dateB;
+    });
+
+    renderCheapDay(cheapTicketDay);
+    renderCheapYear(cheapTicketYearSort);
+};
 
 // обработчики событий
 // при наборе чего либо в инпуте города вылета вызываем функцию, помогающую выбрать город вылета
@@ -85,17 +109,30 @@ dropDownCitiesTo.addEventListener('click', (event) => {
     targetPush(event, inputCitiesTo, dropDownCitiesTo)
 });
 
+// события при нажатии кнопки "найти билеты"
+formSearch.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const cityFrom = city.find((item) => inputCitiesFrom.value === item.name);
+    const cityTo = city.find((item) => inputCitiesTo.value === item.name);
+
+    const formData = {
+        from: cityFrom.code,
+        to: cityTo.code,
+        when: inputDateDepart.value,
+    }
+
+    const requestData = `?depart_date=${formData.when}&origin=${formData.from}&destination=${formData.to}&one_way=true`;
+
+    getData(calendar + requestData, (response) => {
+        renderCheap(response, formData.when);
+    });
+});
+
 
 // вызовы функций
 getData(proxy + citiesApi, (data) => {
     city = JSON.parse(data).filter(item => item.name);
 });
 
-// вызов функции которая ищет билеты на 25 мая Екатеринбург - Калининград
-getData(calendar + queryBilets, (data) => {
-    let bilets = [];
-    bilets = JSON.parse(data);
-    console.log(bilets);
-    console.log(bilets.current_depart_date_prices);
-    console.log(bilets.best_prices);
-});
+//// отсортировать вывод городов в поиске инпута по первой букве
